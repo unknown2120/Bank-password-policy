@@ -21,7 +21,6 @@ def login():
     input_user = st.session_state.username_input
     input_pwd = st.session_state.password_input
     
-    # Check against the OFFICIAL list
     if input_user in USER_CREDENTIALS and USER_CREDENTIALS[input_user] == input_pwd:
         st.session_state.logged_in = True
         st.session_state.role = input_user
@@ -30,7 +29,7 @@ def login():
         st.session_state.attempts += 1
         st.error(f"Wrong credentials! Attempt {st.session_state.attempts}/3")
 
-# --- LOGIN UI ---
+# --- LOGIN GATEKEEPER ---
 if not st.session_state.logged_in:
     st.title("Bank Portal Login")
     if st.session_state.attempts < 3:
@@ -41,10 +40,20 @@ if not st.session_state.logged_in:
         st.error("Account BLOCKED. Please restart.")
     st.stop()
 
-# --- PROTECTED DASHBOARD ---
+# --- YOUR ORIGINAL DASHBOARD (ONLY SHOWS AFTER LOGIN) ---
 st.title("Bank Password Policy Management System")
 st.success(f"Successfully logged in as: {st.session_state.role}")
-st.write("You now have access to the Policy Management features.")
+
+# Paste your original dashboard widgets below:
+st.write("### Password Policy Requirements")
+min_len = st.slider("Minimum Password Length", 8, 20, 10)
+expiry = st.slider("Password Expiry (days)", 30, 90, 30)
+lockout = st.slider("Lockout Attempts", 1, 5, 3)
+
+st.write(f"**Current Policy:**")
+st.write(f"- Min Length: {min_len}")
+st.write(f"- Expiry: {expiry} days")
+st.write(f"- Lockout: After {lockout} failed attempts")
 
 if st.button("Logout"):
     st.session_state.logged_in = False
