@@ -1,83 +1,47 @@
 import streamlit as st
-import json
-import os
 
-st.set_page_config(page_title="Bank Password Policy Manager", layout="wide")
+# --- SECURITY CONFIGURATION ---
+USERNAME = "admin"
+PASSWORD = "password123" # You can change this to your desired password
 
-st.title("🏦 Bank Password Policy Management System")
-st.markdown("---")
+# --- SESSION STATE INITIALIZATION ---
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'attempts' not in st.session_state:
+    st.session_state.attempts = 0
 
-# Define 7 bank user groups
-groups = [
-    "Infrastructure Admins",
-    "System Admins", 
-    "Database Admins",
-    "Network Admins",
-    "Standard Staff",
-    "Management",
-    "Third Party Vendors"
-]
+# --- LOGIN LOGIC ---
+def login():
+    if st.session_state.username_input == USERNAME and st.session_state.password_input == PASSWORD:
+        st.session_state.logged_in = True
+        st.session_state.attempts = 0
+    else:
+        st.session_state.attempts += 1
+        st.error(f"Wrong credentials! Attempt {st.session_state.attempts}/3")
+        if st.session_state.attempts >= 3:
+            st.error("Account BLOCKED. Please restart the app.")
 
-# Default policies for each group
-default_policies = {
-    "Infrastructure Admins": {"min_length": 16, "expiry_days": 30, "lockout_attempts": 3, "complexity": "High"},
-    "System Admins": {"min_length": 16, "expiry_days": 30, "lockout_attempts": 3, "complexity": "High"},
-    "Database Admins": {"min_length": 16, "expiry_days": 30, "lockout_attempts": 3, "complexity": "High"},
-    "Network Admins": {"min_length": 16, "expiry_days": 30, "lockout_attempts": 3, "complexity": "High"},
-    "Standard Staff": {"min_length": 12, "expiry_days": 90, "lockout_attempts": 5, "complexity": "Medium"},
-    "Management": {"min_length": 14, "expiry_days": 60, "lockout_attempts": 5, "complexity": "High"},
-    "Third Party Vendors": {"min_length": 14, "expiry_days": 30, "lockout_attempts": 3, "complexity": "High"}
-}
+# --- UI LAYER ---
+if not st.session_state.logged_in:
+    st.title("Bank Portal Login")
+    
+    if st.session_state.attempts < 3:
+        st.text_input("Username", key="username_input")
+        st.text_input("Password", type="password", key="password_input")
+        st.button("Login", on_click=login)
+    else:
+        st.warning("Access Denied: Maximum attempts reached.")
+    st.stop() # This prevents the rest of the app from showing
 
-# Load saved policies
-policy_file = "policies.json"
-if os.path.exists(policy_file):
-    with open(policy_file, "r") as f:
-        policies = json.load(f)
-else:
-    policies = default_policies
+# --- PROTECTED DASHBOARD CONTENT ---
+# Everything below this line only appears AFTER successful login
+st.title("Bank Dashboard")
+st.success("Successfully Logged In!")
 
-# Sidebar - Select Group
-st.sidebar.title("👤 Select User Group")
-selected_group = st.sidebar.selectbox("Choose a group:", groups)
+st.write("### Policy Management System")
+# Add your original dashboard code, charts, and policy logic here
+st.write("You can now see the bank policy details and dashboard metrics.")
 
-# Main area
-st.header(f"📋 Password Policy for: {selected_group}")
-st.markdown("---")
-
-# Show current policy
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("Current Policy")
-    current = policies[selected_group]
-    st.info(f"🔑 Minimum Password Length: **{current['min_length']} characters**")
-    st.info(f"📅 Password Expiry: **{current['expiry_days']} days**")
-    st.info(f"🔒 Account Lockout After: **{current['lockout_attempts']} failed attempts**")
-    st.info(f"⚡ Complexity Level: **{current['complexity']}**")
-
-with col2:
-    st.subheader("Update Policy")
-    new_length = st.slider("Minimum Password Length", 8, 20, current['min_length'])
-    new_expiry = st.slider("Password Expiry (days)", 30, 180, current['expiry_days'])
-    new_lockout = st.slider("Lockout Attempts", 3, 10, current['lockout_attempts'])
-    new_complexity = st.selectbox("Complexity Level", ["Low", "Medium", "High"], index=["Low", "Medium", "High"].index(current['complexity']))
-
-    if st.button("💾 Save Policy"):
-        policies[selected_group] = {
-            "min_length": new_length,
-            "expiry_days": new_expiry,
-            "lockout_attempts": new_lockout,
-            "complexity": new_complexity
-        }
-        with open(policy_file, "w") as f:
-            json.dump(policies, f)
-        st.success(f"✅ Policy for {selected_group} updated successfully!")
-
-st.markdown("---")
-
-# Show all groups summary
-st.header("📊 All Groups Policy Summary")
-for group in groups:
-    p = policies[group]
-    st.write(f"**{group}** — Min Length: {p['min_length']} | Expiry: {p['expiry_days']} days | Lockout: {p['lockout_attempts']} attempts | Complexity: {p['complexity']}")
+if st.button("Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
